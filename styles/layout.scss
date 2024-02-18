@@ -1,0 +1,156 @@
+html {
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+html,
+body {
+  margin: 0;
+  background-color: $color-background;
+  color: $color-foreground;
+  font-family: "Poppins", sans-serif;
+  // font-weight: 200;
+  font-display: optional;
+
+  background-image: url("/images/dots.svg");
+  background-repeat: no-repeat;
+  background-position: center 0rem;
+  background-size: 1280px;
+}
+
+a {
+  color: $color-foreground;
+  text-decoration: underline;
+  text-decoration-color: $color-primary-dark;
+
+  &:hover {
+    color: $color-primary;
+  }
+}
+
+footer {
+  clear: both;
+  font-size: 0.9em;
+
+  .footer__copyright {
+    text-align: center;
+    margin: 3rem auto;
+  }
+}
+
+header {
+  margin-top: 1em;
+}
+
+main > .container {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.button {
+  text-transform: none;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+em {
+  font-style: normal;
+  font-weight: 700;
+  color: $color-primary;
+}
+
+hr {
+  border-color: $color-primary-dark;
+  margin: 3rem 0;
+}
+
+h1 {
+  font-weight: 700;
+  text-align: center;
+  margin-top: 0rem;
+
+  & + h2 {
+    text-align: center;
+    margin-top: -2rem;
+    margin-bottom: 4rem;
+  }
+}
+
+h2 {
+  margin: 4rem 0 2rem 0;
+}
+
+.container .row .column--no-mobile {
+  display: none;
+}
+
+@media (min-width: 50rem) {
+  .container .row .column--no-mobile {
+    display: block;
+  }
+}
+
+.account__list {
+  display: grid;
+  gap: 1rem;
+  list-style-type: none;
+  margin: 0px;
+}
+
+.account__item {
+  display: block;
+  padding: 0;
+  border-radius: 2rem;
+  padding: 2rem;
+  margin: 1rem;
+  box-shadow: $color-primary-darker 0px 8px 15px -5px;
+  text-align: center;
+
+  .image-wrapper {
+    width: 64px;
+    height: 64px;
+    margin: 3rem auto;
+    border-radius: 50%;
+    aspect-ratio: 1;
+    box-shadow: $color-primary-darker 0px 4px 7px -2px;
+
+    img {
+      border-radius: 50%;
+    }
+  }
+
+  h3 {
+    text-transform: uppercase;
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  h4 {
+    font-size: 2rem;
+  }
+
+  h5 {
+    font-size: 1.6rem;
+    font-weight: bold;
+  }
+
+  .account__text {
+    font-size: 1.2rem;
+    color: $color-foreground;
+    white-space: pre-wrap;
+    margin: 1rem;
+  }
+}
+
+@media (min-width: 40rem) {
+  .account__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 60rem) {
+  .account__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
