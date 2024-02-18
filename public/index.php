@@ -1,5 +1,13 @@
 <?php
 
+// Forked from Server in a Single PHP File
+// https://gitlab.com/edent/activitypub-single-php-file
+//
+// Licensed under the GNU Affero General Public License v3.0 or later
+//
+// Modifications by Kore Nordmann to make it multi-user ready and use it to
+// feed text and image RSS feeds into Mastodon
+
 $users = include(__DIR__ . '/../users.php');
 $keyPrivate = file_get_contents(__DIR__ . "/../id_rsa");
 $keyPublic = file_get_contents(__DIR__ . "/../id_rsa.pub");
