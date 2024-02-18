@@ -32,25 +32,15 @@ if (preg_match('/\.(?:svg|png|jpg|jpeg|gif|css)$/', $_SERVER["REQUEST_URI"])) {
     return false;
 }
 
-// Logging:
-// ActivityPub is a "chatty" protocol. This takes all the requests your server receives and saves them in `/logs/` as a datestamped text file.
-
-// Get all headers and requests sent to this server
-$headers = print_r(getallheaders(), true);
-$postData = print_r($_POST, true);
-$getData = print_r($_GET, true);
-$filesData = print_r($_FILES, true);
+// log every request by default
 $body = json_decode(file_get_contents("php://input"), true);
-$bodyData = print_r($body, true);
-$requestData = print_r($_REQUEST, true);
-$serverData = print_r($_SERVER, true);
 
 // Get the type of request - used in the log filename
 if (isset($body["type"])) {
     // Sanitise type to only include letter
     $type = " " . preg_replace("/[^a-zA-Z]/", "", $body["type"]);
 } else {
-    $type = "";
+    $type = $_SERVER['REQUEST_METHOD'];
 }
 
 // Create a timestamp for the filename
@@ -62,19 +52,27 @@ $timestamp = (new DateTime())->format(DATE_RFC3339_EXTENDED);
 $filename = "{$timestamp}-{$type}.txt";
 
 // Save headers and request data to the timestamped file in the logs directory
-if (!is_dir("logs")) {
-    mkdir("logs");
+$logDir = __DIR__ . "/../logs";
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0755, true);
+}
+
+$headers = [];
+foreach ($_SERVER as $key => $value) {
+    if (substr($key, 0, 5) !== 'HTTP_') continue;
+    $headers[] = ucwords(str_replace('_', '-', strtolower(substr($key, 5))), '-') . ': ' . $value;
 }
 
 file_put_contents(
-    "logs/{$filename}",
-    "Headers:\n$headers\n\n" .
-    "Body Data:\n$bodyData\n\n" .
-    "POST Data:\n$postData\n\n" .
-    "GET Data:\n$getData\n\n" .
-    "Files Data:\n$filesData\n\n" .
-    "Request Data:\n$requestData\n\n" .
-    "Server Data:\n$serverData\n\n"
+    "{$logDir}/{$filename}",
+    sprintf(
+        "%s %s %s\n%s\n\n%s",
+        $_SERVER['SERVER_PROTOCOL'],
+        $_SERVER['REQUEST_METHOD'],
+        $_SERVER['REQUEST_URI'],
+        implode("\n", $headers),
+        file_get_contents("php://input")
+    )
 );
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);

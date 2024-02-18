@@ -105,10 +105,12 @@ h2 {
   border-radius: 2rem;
   margin: 1rem;
   box-shadow: $color-primary-darker 0px 8px 15px -5px;
+  border: 2px solid $color-background;
   text-align: center;
 
   &:hover {
     box-shadow: $color-primary-darker 2px 12px 20px -8px;
+    border: 2px solid $color-primary;
   }
 
   > a {

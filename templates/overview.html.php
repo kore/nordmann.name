@@ -31,7 +31,7 @@
             <h3><?=e($user->name)?></h3>
             <h4>@<?=e($user->user)?>@<?=e($server)?></h4>
         <?php if (isset($user->alias)): ?>
-            <h5>@<?=e($user->alias->user)?>@<?=e($user->alias->domain)?></h5>
+            <h5>→&nbsp;@<?=e($user->alias->user)?>@<?=e($user->alias->domain)?></h5>
         <?php else: ?>
             <h5>23 followers | 10 posts</h5>
         <?php endif; ?>
