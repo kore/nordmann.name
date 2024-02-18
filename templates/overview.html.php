@@ -20,7 +20,7 @@
   <main>
     <div class="container">
       <h1>Welcome</h1>
-      <h2>Overview of ActivityPub / mastodon users on the domain nordmann.name</h2>
+      <h2>Overview of ActivityPub (mastodon) users on nordmann.name</h2>
       <ul class="account__list">
       <?php foreach ($users as $user): ?>
         <li class="account__item">
@@ -31,7 +31,7 @@
             <h3><?=e($user->name)?></h3>
             <h4>@<?=e($user->user)?>@<?=e($server)?></h4>
         <?php if (isset($user->alias)): ?>
-            <h5>alias for @<?=e($user->alias->user)?>@<?=e($user->alias->domain)?></h5>
+            <h5>@<?=e($user->alias->user)?>@<?=e($user->alias->domain)?></h5>
         <?php else: ?>
             <h5>23 followers | 10 posts</h5>
         <?php endif; ?>
@@ -45,6 +45,9 @@
   <footer>
     <p class="footer__copyright">
       &copy; Kore Nordmann, 2006 to <?=date("Y")?> – <a href="https://kore-nordmann.de/imprint/">Imprint / Impressum</a>
+    </p>
+    <p class="footer__copyright">
+      ActivityPub code is forked from <a href="https://gitlab.com/edent/activitypub-single-php-file">ActivityPub Server in a Single PHP File</a> and therefore licensed under the <a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License v3.0 or later</a>: <a href="/viewSource">View the source</a>.
     </p>
   </footer>
 </body>

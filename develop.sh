@@ -9,7 +9,7 @@ killbg() {
 trap killbg EXIT
 
 pids=()
-node_modules/.bin/sass styles/app.scss:styles.css --load-path=node_modules/ --watch &
+node_modules/.bin/sass styles/app.scss:public/styles.css --load-path=node_modules/ --watch &
 pids+=($!)
 
-php -S localhost:8080 -t ./ index.php
+php -S localhost:8080 -t public/ public/index.php

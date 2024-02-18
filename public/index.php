@@ -1,33 +1,9 @@
 <?php
 
-$users = [
-    "kore" => (object) [
-        'user' => "kore",
-        'name' => "Kore Nordmann",
-        'summary' => "Currently I focus on scaling products as a former founder & CTO inside of commercetools. My passion is empathically building sustainable software.",
-        'alias' => (object) [
-            'user' => 'kore',
-            'domain' => 'chaos.social',
-        ],
-    ],
-    "kores-blog" => (object) [
-        'user' => "kores-blog",
-        'name' => "Kore Nordmann",
-        'summary' => "Blog posts by @kore@nordmann.name",
-    ],
-    "kores-photos" => (object) [
-        'user' => "kores-photos",
-        'name' => "Kore Nordmann",
-        'summary' => "Photos by @kore@nordmann.name",
-    ],
-];
-ksort($users);
-
-$keyPrivate = file_get_contents(__DIR__ . "/id_rsa");
-$keyPublic = file_get_contents(__DIR__ . "/id_rsa.pub");
-
-// Password for sending messages
-$password = "3shvyV9kwW6KNexUCB5ZXX5tXn7tbrbe";
+$users = include(__DIR__ . '/../users.php');
+$keyPrivate = file_get_contents(__DIR__ . "/../id_rsa");
+$keyPublic = file_get_contents(__DIR__ . "/../id_rsa.pub");
+$secret = trim(file_get_contents(__DIR__ . '/../secret.txt'));
 
 // Internal data
 $server = $_SERVER["SERVER_NAME"];
@@ -109,6 +85,9 @@ switch (true) {
         send();
     case "/outbox" === $requestPath:
         outbox();
+    case "/viewSource" === $requestPath:
+        echo '<html><body><pre>' . e(file_get_contents(__FILE__)) . '</pre></body></html>';
+        die();
     case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*))', $requestPath, $match):
         if (isset($users[$match['user']])) {
             username($users[$match['user']]);
@@ -401,7 +380,7 @@ function e(string $string): string
 function home()
 {
     global $users, $server;
-    include(__DIR__ . "/overview.html.php");
+    include(__DIR__ . "/../templates/overview.html.php");
     die();
 }
 
