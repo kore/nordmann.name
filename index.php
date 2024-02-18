@@ -10,13 +10,13 @@ $users = [
             'domain' => 'chaos.social',
         ],
     ],
-    "kores.blog" => (object) [
-        'user' => "kores.blog",
+    "kores-blog" => (object) [
+        'user' => "kores-blog",
         'name' => "Kore Nordmann",
         'summary' => "Blog posts by @kore@nordmann.name",
     ],
-    "kores.photos" => (object) [
-        'user' => "kores.photos",
+    "kores-photos" => (object) [
+        'user' => "kores-photos",
         'name' => "Kore Nordmann",
         'summary' => "Photos by @kore@nordmann.name",
     ],
@@ -39,6 +39,13 @@ foreach ($users as $user) {
     } else {
         $user->avatar = '/images/dummy.svg';
     }
+
+    $user->id = "https://{$server}/users/{$user->user}";
+}
+
+// Just for PHPs internal webserver: Ignore static files
+if (preg_match('/\.(?:svg|png|jpg|jpeg|gif|css)$/', $_SERVER["REQUEST_URI"])) {
+    return false;
 }
 
 // Logging:
@@ -86,56 +93,76 @@ file_put_contents(
     "Server Data:\n$serverData\n\n"
 );
 
-// Routing:
-// The .htaccess changes /whatever to /?path=whatever
-// This runs the function of the path requested.
-!empty($_GET["path"]) ? ($path = $_GET["path"]) : home();
-switch ($path) {
-    case ".well-known/webfinger":
-        webfinger(); // Mandatory. Static.
-    case rawurldecode($username):
-        username(); // Mandatory. Static
-    case "following":
-        following(); // Mandatory. Static
-    case "followers":
-        followers(); // Mandatory. Could be dynamic
-    case "inbox":
-        inbox(); // Mandatory. Only accepts follow requests.
-    case "write":
-        write(); // User interface for writing posts
-    case "send": // API for posting content to the Fediverse
+$requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+switch (true) {
+    case "/" === $requestPath:
+        home();
+    case "/.well-known/webfinger" === $requestPath:
+        webfinger();
+    case "/following" === $requestPath:
+        following();
+    case "/followers" === $requestPath:
+        followers();
+    case "/inbox" === $requestPath:
+        inbox();
+    case "/send" === $requestPath:
         send();
-    case "outbox": // Optional. Dynamic.
+    case "/outbox" === $requestPath:
         outbox();
+    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*))', $requestPath, $match):
+        if (isset($users[$match['user']])) {
+            username($users[$match['user']]);
+        } // Fallback to default -> 404
+    case preg_match('(/@(?P<user>[a-z0-9][a-z0-9-._]*))', $requestPath, $match):
+        if (isset($users[$match['user']])) {
+            userpage($users[$match['user']]);
+        } // Fallback to default -> 404
     default:
+        header("HTTP/1.0 404 Not Found");
+        echo "<h1>404 Not Found</h1>";
+        echo "<h2>" . e($requestPath) . " is not handled by this server.</h2>";
         die();
 }
 
-// The [WebFinger Protocol](https://docs.joinmastodon.org/spec/webfinger/) is used to identify accounts.
-// It is requested with `example.com/.well-known/webfinger?resource=acct:username@example.com`
-// This server only has one user, so it ignores the query string and always returns the same details.
+// The [WebFinger Protocol](https://docs.joinmastodon.org/spec/webfinger/) is
+// used to identify accounts. It is requested with
+// `example.com/.well-known/webfinger?resource=acct:username@example.com`
 function webfinger()
 {
-    global $username, $server;
+    global $users, $server;
 
-    $webfinger = [
-        "subject" => "acct:{$username}@{$server}",
+    if (empty($_GET['resource']) ||
+        !preg_match('(^acct:(?P<user>[a-z0-9][a-z0-9-._]*)@(?P<domain>.*)$)', $_GET['resource'], $match) ||
+        !isset($users[$match['user']]) ||
+        $server !== $match['domain']) {
+        header("HTTP/1.0 404 Not Found");
+        echo "<h1>404 Not Found</h1>";
+        echo "<h2>User not found on this server.</h2>";
+        die();
+    }
+
+    $user = $users[$match['user']];
+
+    $webfinger = array_filter([
+        "subject" => "acct:{$user->user}@{$server}",
+        "aliases" => isset($user->alias) ? [
+            "https://{$user->alias->domain}/@{$user->alias->user}",
+            "https://{$user->alias->domain}/users/{$user->alias->user}",
+        ] : null,
         "links" => [
             [
                 "rel" => "self",
                 "type" => "application/activity+json",
-                "href" => "https://{$server}/{$username}",
+                "href" => $user->id,
             ],
         ],
-    ];
+    ]);
     header("Content-Type: application/json");
     echo json_encode($webfinger);
     die();
 }
 
-// User:
-// Requesting `example.com/username` returns a JSON document with the user's information.
-function username()
+function username(\StdClass $user)
 {
     global $username, $realName, $summary, $server, $keyPublic;
 
@@ -144,27 +171,27 @@ function username()
             "https://www.w3.org/ns/activitystreams",
             "https://w3id.org/security/v1",
         ],
-        "id" => "https://{$server}/{$username}",
+        "id" => $user->id,
         "type" => "Person",
         "following" => "https://{$server}/following",
         "followers" => "https://{$server}/followers",
         "inbox" => "https://{$server}/inbox",
         "outbox" => "https://{$server}/outbox",
-        "preferredUsername" => rawurldecode($username),
-        "name" => "{$realName}",
-        "summary" => "{$summary}",
-        "url" => "https://{$server}/{$username}",
+        "preferredUsername" => $user->user,
+        "name" => $user->name,
+        "summary" => $user->summary,
+        "url" => $user->id,
         "manuallyApprovesFollowers" => true,
         "discoverable" => true,
         "published" => "2024-02-12T11:51:00Z",
         "icon" => [
             "type" => "Image",
             "mediaType" => "image/png",
-            "url" => "https://{$server}/icon.png",
+            "url" => "https://{$server}{$user->avatar}",
         ],
         "publicKey" => [
-            "id" => "https://{$server}/{$username}#main-key",
-            "owner" => "https://{$server}/{$username}",
+            "id" => "https://{$server}/{$user->user}#main-key",
+            "owner" => $user->id,
             "publicKeyPem" => $keyPublic,
         ],
     ];
@@ -191,6 +218,7 @@ function following()
     echo json_encode($following);
     die();
 }
+
 function followers()
 {
     global $server;
@@ -207,12 +235,13 @@ function followers()
 }
 
 // Inbox:
-// The `/inbox` is the main server. It receives all requests.
-// This server only responds to "Follow" requests.
-// A remote server sends a follow request which is a JSON file saying who they are.
-// This code does not cryptographically validate the headers of the received message.
-// The name of the remote user's server is saved to a file so that future messages can be delivered to it.
-// An accept request is cryptographically signed and POST'd back to the remote server.
+// The `/inbox` is the main server. It receives all requests. This server only
+// responds to "Follow" requests. A remote server sends a follow request which
+// is a JSON file saying who they are. This code does not cryptographically
+// validate the headers of the received message. The name of the remote user's
+// server is saved to a file so that future messages can be delivered to it.
+// An accept request is cryptographically signed and POST'd back to the remote
+// server.
 function inbox()
 {
     global $body, $server, $username, $keyPrivate;

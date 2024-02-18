@@ -12,4 +12,4 @@ pids=()
 node_modules/.bin/sass styles/app.scss:styles.css --load-path=node_modules/ --watch &
 pids+=($!)
 
-php -S localhost:8080 -t ./
+php -S localhost:8080 -t ./ index.php
