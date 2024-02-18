@@ -30,7 +30,9 @@ a {
 
 footer {
   clear: both;
-  font-size: 0.9em;
+  font-size: 1.2rem;
+  border-top: 2px solid $color-primary;
+  margin-top: 1rem;
 
   .footer__copyright {
     text-align: center;
@@ -39,7 +41,7 @@ footer {
 }
 
 header {
-  margin-top: 1em;
+  margin-top: 1rem;
 }
 
 main > .container {
