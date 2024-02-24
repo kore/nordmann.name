@@ -146,9 +146,20 @@ function webfinger()
     die();
 }
 
+function userpage(\StdClass $user)
+{
+    global $server, $keyPublic;
+
+    // For non browser calls fall back to JSON user repsose:
+    if (strpos($_SERVER['HTTP_ACCEPT'], 'text/html') === false) return username($user);
+
+    include(__DIR__ . "/../templates/user.html.php");
+    die();
+}
+
 function username(\StdClass $user)
 {
-    global $username, $realName, $summary, $server, $keyPublic;
+    global $server, $keyPublic;
 
     $user = [
         "@context" => [
