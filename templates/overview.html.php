@@ -1,4 +1,4 @@
-<?include(__DIR__ . '/head.html.php')?>
+<?php include(__DIR__ . '/head.html.php') ?>
 <h1>Welcome</h1>
 <h2>Overview of ActivityPub (mastodon) users on nordmann.name</h2>
 <ul class="account__list">
@@ -20,4 +20,4 @@
   </li>
 <?php endforeach; ?>
 </ul>
-<?include(__DIR__ . '/foot.html.php')?>
+<?php include(__DIR__ . '/foot.html.php') ?>
