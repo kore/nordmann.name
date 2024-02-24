@@ -11,7 +11,6 @@
 $users = include(__DIR__ . '/../users.php');
 $keyPrivate = file_get_contents(__DIR__ . "/../id_rsa");
 $keyPublic = file_get_contents(__DIR__ . "/../id_rsa.pub");
-$secret = trim(file_get_contents(__DIR__ . '/../secret.txt'));
 
 // Internal data
 $server = $_SERVER["SERVER_NAME"];

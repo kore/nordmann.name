@@ -9,6 +9,7 @@ $users = [
             'user' => 'arnenordmann',
             'domain' => 'det.social',
         ],
+        'secret' => null,
     ],
     "kore" => (object) [
         'user' => "kore",
@@ -18,16 +19,19 @@ $users = [
             'user' => 'kore',
             'domain' => 'chaos.social',
         ],
+        'secret' => null,
     ],
     "kores-blog" => (object) [
         'user' => "kores-blog",
         'name' => "Kore Nordmann",
         'summary' => "Blog posts by @kore@nordmann.name",
+        'secret' => 'EBy43xHREueW48',
     ],
     "kores-photos" => (object) [
         'user' => "kores-photos",
         'name' => "Kore Nordmann",
         'summary' => "Photos by @kore@nordmann.name",
+        'secret' => 'ZVC5utS3ubWXAu',
     ],
 ];
 ksort($users);
