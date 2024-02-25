@@ -46,7 +46,7 @@ if (isset($body["type"])) {
 // Create a timestamp for the filename
 // This format has milliseconds, so should avoid logs being overwritten.
 // If you have > 1000 requests per second, please use a different server.
-$timestamp = (new DateTime())->format(DATE_RFC3339_EXTENDED);
+$timestamp = (new DateTime())->format('Y-m-d-H-i-s');
 
 // Filename for the log
 $filename = "{$timestamp}-{$type}.txt";
@@ -247,7 +247,7 @@ function followers()
 // server.
 function inbox()
 {
-    global $body, $server, $username, $keyPrivate;
+    global $body, $server, $users, $keyPrivate;
 
     // Get the message and type
     $inboxMessage = $body;
@@ -261,24 +261,34 @@ function inbox()
     // Get the parameters
     $inboxId = $inboxMessage["id"];
     $inboxActor = $inboxMessage["actor"];
+    $followTarget = basename($inboxMessage["object"]);
     $inboxHost = parse_url($inboxActor, PHP_URL_HOST);
 
+    if (!isset($users[$followTarget])) {
+        header("HTTP/1.0 404 Not Found");
+        echo "<h1>404 Not Found</h1>";
+        echo "<h2>" . e($followTarget) . " could not be found.</h2>";
+        die();
+    }
+    $user = $users[$followTarget];
+
     // Does this account have any followers?
-    if (file_exists("followers.json")) {
-        $followersFile = file_get_contents("followers.json");
-        $followersJson = json_decode($followersFile, true);
+    $followerFile = __DIR__ . '/../data/' . $user->user . '/followers.json';
+    if (!file_exists(dirname($followerFile))) {
+        mkdir(dirname($followerFile), 0750, true);
+    }
+
+    if (file_exists($followerFile)) {
+        $followers = json_decode(file_get_contents($followerFile), true);
     } else {
-        $followersJson = [];
+        $followers = [];
     }
 
     // Add user to list. Don't care about duplicate users, server is what's important
-    $followersJson[$inboxHost]["users"][] = $inboxActor;
+    $followers[$inboxHost]["users"][] = $inboxActor;
 
     // Save the new followers file
-    file_put_contents(
-        "followers.json",
-        print_r(json_encode($followersJson), true)
-    );
+    file_put_contents($followerFile, json_encode($followers, JSON_PRETTY_PRINT));
 
     // Response Message ID
     // This isn't used for anything important so could just be a random number
@@ -289,13 +299,13 @@ function inbox()
         "@context" => "https://www.w3.org/ns/activitystreams",
         "id" => "https://{$server}/{$guid}",
         "type" => "Accept",
-        "actor" => "https://{$server}/{$username}",
+        "actor" => $user->id,
         "object" => [
             "@context" => "https://www.w3.org/ns/activitystreams",
             "id" => $inboxId,
             "type" => $inboxType,
             "actor" => $inboxActor,
-            "object" => "https://{$server}/{$username}",
+            "object" => $user->id,
         ],
     ];
 
@@ -305,7 +315,7 @@ function inbox()
     $path = parse_url($inboxActor, PHP_URL_PATH) . "/inbox";
 
     // Get the signed headers
-    $headers = generate_signed_headers($message, $host, $path);
+    $headers = generateSignedHeaders($user, $message, $host, $path);
 
     // Specify the URL of the remote server's inbox
     // TODO: The path doesn't *always* end with /inbox
@@ -321,9 +331,13 @@ function inbox()
 
     // Check for errors
     if (curl_errno($ch)) {
+        header("HTTP/1.0 500 Internal Server Error");
         file_put_contents("error.txt", curl_error($ch));
+        echo json_encode(['ok' => false, 'error' => curl_error($ch)]);
     }
     curl_close($ch);
+
+    echo json_encode(['ok' => true]);
     die();
 }
 
@@ -346,15 +360,15 @@ function uuid()
 // Headers:
 // Every message that your server sends needs to be cryptographically signed with your Private Key.
 // This is a complicated process. Please read https://blog.joinmastodon.org/2018/07/how-to-make-friends-and-verify-requests/ for more information.
-function generate_signed_headers($message, $host, $path)
+function generateSignedHeaders($user, $message, $host, $path)
 {
-    global $server, $username, $keyPrivate;
+    global $server, $keyPrivate;
 
     // Encode the message object to JSON
     $messageJson = json_encode($message);
 
     // Location of the Public Key
-    $keyId = "https://{$server}/{$username}#main-key";
+    $keyId = $user->id . "#main-key";
 
     // Generate signing variables
     $hash = hash("sha256", $messageJson, true);
@@ -370,19 +384,12 @@ function generate_signed_headers($message, $host, $path)
     // The signing function returns the variable $signature
     // https://www.php.net/manual/en/function.openssl-sign.php
     openssl_sign($stringToSign, $signature, $signer, OPENSSL_ALGO_SHA256);
-    // Encode the signature
-    $signatureB64 = base64_encode($signature);
 
     // Full signature header
-    $signatureHeader =
-        'keyId="' .
-        $keyId .
-        '",algorithm="rsa-sha256",headers="(request-target) host date digest",signature="' .
-        $signatureB64 .
-        '"';
+    $signatureB64 = base64_encode($signature);
+    $signatureHeader = 'keyId="' .  $keyId .  '",algorithm="rsa-sha256",headers="(request-target) host date digest",signature="' .  $signatureB64 .  '"';
 
-    // Header for POST reply
-    $headers = [
+    return [
         "Host: {$host}",
         "Date: {$date}",
         "Digest: SHA-256={$digest}",
@@ -390,8 +397,6 @@ function generate_signed_headers($message, $host, $path)
         "Content-Type: application/activity+json",
         "Accept: application/activity+json",
     ];
-
-    return $headers;
 }
 
 function e(string $string): string
@@ -514,8 +519,8 @@ function send()
 
     // Read existing users and get their hosts
     $followersFile = file_get_contents("followers.json");
-    $followersJson = json_decode($followersFile, true);
-    $hosts = array_keys($followersJson);
+    $followers = json_decode($followersFile, true);
+    $hosts = array_keys($followers);
 
     // Prepare to use the multiple cURL handle
     $mh = curl_multi_init();
@@ -528,7 +533,7 @@ function send()
         $path = "/inbox";
 
         // Get the signed headers
-        $headers = generate_signed_headers($message, $host, $path);
+        $headers = generateSignedHeaders($message, $host, $path);
 
         // Specify the URL of the remote server
         $remoteServerUrl = "https://{$host}{$path}";
