@@ -25,6 +25,10 @@ foreach ($users as $user) {
 
     $user->id = "https://{$server}/users/{$user->user}";
     $user->type = $user->isBot ?? false ? 'Service' : 'Person';
+
+    $user->dataDirectory = __DIR__ . '/../data/' . $user->user;
+    $user->followers = file_exists($user->dataDirectory . '/followers.json') ? json_decode(file_get_contents($user->dataDirectory . '/followers.json')) : [];
+    $user->outbox = file_exists($user->dataDirectory . '/outbox.json') ? json_decode(file_get_contents($user->dataDirectory . '/outbox.json')) : [];
 }
 
 // Just for PHPs internal webserver: Ignore static files
@@ -273,7 +277,7 @@ function inbox()
     $user = $users[$followTarget];
 
     // Does this account have any followers?
-    $followerFile = __DIR__ . '/../data/' . $user->user . '/followers.json';
+    $followerFile = $user->dataDirectory . '/followers.json';
     if (!file_exists(dirname($followerFile))) {
         mkdir(dirname($followerFile), 0750, true);
     }
@@ -285,9 +289,12 @@ function inbox()
     }
 
     $followers[$inboxHost]["users"][] = $inboxActor;
+    $count = 0;
     foreach ($followers as $host => $data) {
         $followers[$host]["users"] = array_unique($data["users"]);
+        $count += count($followers[$host]["users"]);
     }
+    $followers["count"] = $count;
 
     // Save the new followers file
     file_put_contents($followerFile, json_encode($followers, JSON_PRETTY_PRINT));
