@@ -1,0 +1,8 @@
+HTTP/1.1 GET /.well-known/webfinger?resource=acct:kore@nordmann.name
+Connection: close
+Accept: application/jrd+json, application/json
+Accept-Encoding: gzip
+Date: Tue, 27 Feb 2024 14:58:32 GMT
+Host: nordmann.name
+User-Agent: http.rb/5.1.1 (Mastodon/4.2.1; +https://social.k023.de/)
+
