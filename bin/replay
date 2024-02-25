@@ -7,7 +7,7 @@ if (count($argv) < 2) {
 }
 
 $fixture = $argv[1];
-$targetHost = $argv[2] ?? 'localhost:8080';
+$targetHost = $argv[2] ?? 'http://localhost:8080';
 
 if (!file_exists($fixture)) {
     echo "Can't locate file at ", $fixture, PHP_EOL;
@@ -35,5 +35,6 @@ if ($body) {
 }
 
 $command = "/usr/bin/env curl " . implode(" ", array_map('escapeshellarg', $parameters));
+echo $command, PHP_EOL;
 echo `$command`;
 
