@@ -1,0 +1,39 @@
+#!/usr/bin/env php
+<?php
+
+if (count($argv) < 2) {
+    echo "Usage: ", $argv[0], " <fixture> [<host>]", PHP_EOL;
+    exit(64);
+}
+
+$fixture = $argv[1];
+$targetHost = $argv[2] ?? 'localhost:8080';
+
+if (!file_exists($fixture)) {
+    echo "Can't locate file at ", $fixture, PHP_EOL;
+    exit(1);
+}
+
+$lines = file($fixture);
+list($httpVersion, $method, $path) = explode(' ', trim(array_shift($lines)), 3);
+$parameters = ['-i', '-X', $method, $targetHost . $path];
+
+$headers = [];
+while (($header = array_shift($lines)) &&
+    $header &&
+    preg_match('(^([A-Za-z-]+):\\s+)', $header, $match)) {
+    if (in_array(strtolower($match[1]), ['date', 'content-length', 'connection', 'host'])) continue;
+
+    $parameters[] = '-H';
+    $parameters[] = trim($header);
+}
+
+$body = trim(implode("\n", $lines));
+if ($body) {
+    $parameters[] = '-d';
+    $parameters[] = $body;
+}
+
+$command = "/usr/bin/env curl " . implode(" ", array_map('escapeshellarg', $parameters));
+echo `$command`;
+
