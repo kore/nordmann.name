@@ -26,12 +26,14 @@ $users = [
         'name' => "Kore Nordmann",
         'summary' => "Blog posts by @kore@nordmann.name",
         'secret' => 'EBy43xHREueW48',
+        'isBot' => true,
     ],
     "kores-photos" => (object) [
         'user' => "kores-photos",
         'name' => "Kore Nordmann",
         'summary' => "Photos by @kore@nordmann.name",
         'secret' => 'ZVC5utS3ubWXAu',
+        'isBot' => true,
     ],
 ];
 ksort($users);

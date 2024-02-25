@@ -24,6 +24,7 @@ foreach ($users as $user) {
     }
 
     $user->id = "https://{$server}/users/{$user->user}";
+    $user->type = $user->isBot ?? false ? 'Service' : 'Person';
 }
 
 // Just for PHPs internal webserver: Ignore static files
@@ -172,7 +173,7 @@ function username(\StdClass $user)
             "https://w3id.org/security/v1",
         ],
         "id" => $user->id,
-        "type" => "Person",
+        "type" => $user->type,
         "following" => "https://{$server}/following",
         "followers" => "https://{$server}/followers",
         "inbox" => "https://{$server}/inbox",
