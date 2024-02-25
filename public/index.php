@@ -284,8 +284,10 @@ function inbox()
         $followers = [];
     }
 
-    // Add user to list. Don't care about duplicate users, server is what's important
     $followers[$inboxHost]["users"][] = $inboxActor;
+    foreach ($followers as $host => $data) {
+        $followers[$host]["users"] = array_unique($data["users"]);
+    }
 
     // Save the new followers file
     file_put_contents($followerFile, json_encode($followers, JSON_PRETTY_PRINT));
