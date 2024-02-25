@@ -37,7 +37,7 @@ $body = json_decode(file_get_contents("php://input"), true);
 // Get the type of request - used in the log filename
 if (isset($body["type"])) {
     // Sanitise type to only include letter
-    $type = " " . preg_replace("/[^a-zA-Z]/", "", $body["type"]);
+    $type = preg_replace("/[^a-zA-Z]/", "", $body["type"]);
 } else {
     $type = $_SERVER['REQUEST_METHOD'];
 }
@@ -56,7 +56,7 @@ if (!is_dir($logDir)) {
     mkdir($logDir, 0755, true);
 }
 
-$headers = [];
+$headers = ['Date: ' . $timestamp];
 foreach ($_SERVER as $key => $value) {
     if (substr($key, 0, 5) !== 'HTTP_') continue;
     $headers[] = ucwords(str_replace('_', '-', strtolower(substr($key, 5))), '-') . ': ' . $value;
@@ -128,18 +128,23 @@ function webfinger()
     $user = $users[$match['user']];
 
     $webfinger = array_filter([
-        "subject" => "acct:{$user->user}@{$server}",
         "aliases" => isset($user->alias) ? [
             "https://{$user->alias->domain}/@{$user->alias->user}",
             "https://{$user->alias->domain}/users/{$user->alias->user}",
         ] : null,
         "links" => [
             [
+                "href" => "https://{$server}/@{$user->alias->user}",
+                "rel" => "http://webfinger.net/rel/profile-page",
+                "type" => "text/html",
+            ],
+            [
+                "href" => $user->id,
                 "rel" => "self",
                 "type" => "application/activity+json",
-                "href" => $user->id,
             ],
         ],
+        "subject" => "acct:{$user->user}@{$server}",
     ]);
     header("Content-Type: application/json");
     echo json_encode($webfinger);
@@ -178,14 +183,16 @@ function username(\StdClass $user)
         "url" => $user->id,
         "manuallyApprovesFollowers" => true,
         "discoverable" => true,
-        "published" => "2024-02-12T11:51:00Z",
+        "published" => "2024-02-12",
+        "indexable" => true,
+        "memorial" => false,
         "icon" => [
             "type" => "Image",
             "mediaType" => "image/png",
             "url" => "https://{$server}{$user->avatar}",
         ],
         "publicKey" => [
-            "id" => "https://{$server}/{$user->user}#main-key",
+            "id" => "{$user->id}#main-key",
             "owner" => $user->id,
             "publicKeyPem" => $keyPublic,
         ],
