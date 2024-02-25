@@ -1,0 +1,12 @@
+HTTP/1.1 POST /inbox
+Content-Length: 359
+Connection: Keep-Alive
+Signature: keyId="https://social.k023.de/users/admin#main-key",algorithm="rsa-sha256",headers="(request-target) host date digest content-type",signature="rDfzUDvyotC0GZj9sp/5SEnK8t3gU8GMT6pp6Bo9z/+AvpfbXjFJ64z8dvFCNiOTm2jAMRGI19yoV9SktTa0zvzGc92hb3HRU3KILbdou5KdaLyQ+vLlPFfpxtWCraNBvzTW9wRwnqueynbUKjRsU2kjFLLQrUicMvUWUzqsCoL/i5gqVdbprAbs017gghEK+TgcfaC2dNy/bXTLWsphQf3/XJWRZBvUL9HFld8JyBvqcetlvPw5cfpZQA8RTsFIt47M6YNslW6vxQ7/2qTB44KuR9ah7LpPi1mrhvIRHB5D/j7/N9x7eqcEW+EdtU5/k4unqJDW+VcR2ZKPNFWO3A=="
+Content-Type: application/activity+json
+Digest: SHA-256=hTc0pNKhGKASR6c/OFYlnsiA3x9L3jbk89vldeT5xHw=
+Accept-Encoding: gzip
+Date: Tue, 27 Feb 2024 14:59:09 GMT
+Host: nordmann.name
+User-Agent: http.rb/5.1.1 (Mastodon/4.2.1; +https://social.k023.de/)
+
+{"@context":"https://www.w3.org/ns/activitystreams","id":"https://social.k023.de/users/admin#follows/1/undo","type":"Undo","actor":"https://social.k023.de/users/admin","object":{"id":"https://social.k023.de/bcf7a4db-8510-4bb8-b159-cca690d6e006","type":"Follow","actor":"https://social.k023.de/users/admin","object":"https://nordmann.name/users/kores-photos"}}
