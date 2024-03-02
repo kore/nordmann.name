@@ -167,6 +167,17 @@ function userpage(\StdClass $user)
 {
     global $server, $keyPublic;
 
+    if (!empty($user->alias)) {
+        if (strpos($_SERVER['REQUEST_URI'], '@') !== false) {
+            $target = 'https://' . $user->alias->domain . '/@' . $user->alias->user;
+        } else {
+            $target = 'https://' . $user->alias->domain . '/users/' . $user->alias->user;
+        }
+
+        header("Location: " . $target);
+        die();
+    }
+
     // For non browser calls fall back to JSON user repsose:
     if (strpos($_SERVER['HTTP_ACCEPT'], 'text/html') === false) return username($user);
 
