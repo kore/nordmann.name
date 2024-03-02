@@ -85,16 +85,26 @@ switch (true) {
         home();
     case "/.well-known/webfinger" === $requestPath:
         webfinger();
-    case "/following" === $requestPath:
-        following();
-    case "/followers" === $requestPath:
-        followers();
     case "/inbox" === $requestPath:
         inbox();
     case "/send" === $requestPath:
         send();
-    case "/outbox" === $requestPath:
-        outbox();
+    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/following)', $requestPath, $match):
+        if (isset($users[$match['user']])) {
+            following($users[$match['user']]);
+        } // Fallback to default -> 404
+    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/followers)', $requestPath, $match):
+        if (isset($users[$match['user']])) {
+            followers($users[$match['user']]);
+        } // Fallback to default -> 404
+    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/inbox)', $requestPath, $match):
+        if (isset($users[$match['user']])) {
+            userInbox($users[$match['user']]);
+        } // Fallback to default -> 404
+    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/outbox)', $requestPath, $match):
+        if (isset($users[$match['user']])) {
+            outbox($users[$match['user']]);
+        } // Fallback to default -> 404
     case "/viewSource" === $requestPath:
         echo '<html><body><pre>' . e(file_get_contents(__FILE__)) . '</pre></body></html>';
         die();
@@ -178,10 +188,10 @@ function username(\StdClass $user)
         ],
         "id" => $user->id,
         "type" => $user->type,
-        "following" => "https://{$server}/following",
-        "followers" => "https://{$server}/followers",
-        "inbox" => "https://{$server}/inbox",
-        "outbox" => "https://{$server}/outbox",
+        "following" => $user->id . "/following",
+        "followers" => $user->id . "/followers",
+        "inbox" => $user->id . "/inbox",
+        "outbox" => $user->id . "/outbox",
         "preferredUsername" => $user->user,
         "name" => $user->name,
         "summary" => $user->summary,
@@ -210,31 +220,29 @@ function username(\StdClass $user)
 // Follower / Following:
 // These JSON documents show how many users are following / followers-of this account.
 // The information here is self-attested. So you can lie and use any number you want.
-function following()
+function following(\StdClass $user)
 {
     global $server;
 
     $following = [
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "id" => "https://{$server}/following",
+        "id" => $user->id . "/following",
         "type" => "Collection",
         "totalItems" => 0,
-        "items" => [],
     ];
     header("Content-Type: application/activity+json");
     echo json_encode($following);
     die();
 }
 
-function followers()
+function followers(\StdClass $user)
 {
     global $server;
     $followers = [
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "id" => "https://{$server}/followers",
+        "id" => $user->id . "/followers",
         "type" => "Collection",
-        "totalItems" => 0,
-        "items" => [],
+        "totalItems" => $user->followers->count,
     ];
     header("Content-Type: application/activity+json");
     echo json_encode($followers);
@@ -258,6 +266,7 @@ function inbox()
     $inboxType = $inboxMessage["type"];
 
     // This inbox only responds to follow requests
+    // @TODO: Implement unfollow & undo
     if ("Follow" != $inboxType) {
         die();
     }
