@@ -88,6 +88,7 @@ switch (true) {
         home();
     case "/.well-known/webfinger" === $requestPath:
         webfinger();
+    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/inbox)', $requestPath, $match):
     case "/inbox" === $requestPath:
         inbox();
     case "/send" === $requestPath:
@@ -99,10 +100,6 @@ switch (true) {
     case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/followers)', $requestPath, $match):
         if (isset($users[$match['user']])) {
             followers($users[$match['user']]);
-        } // Fallback to default -> 404
-    case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/inbox)', $requestPath, $match):
-        if (isset($users[$match['user']])) {
-            userInbox($users[$match['user']]);
         } // Fallback to default -> 404
     case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*)/outbox)', $requestPath, $match):
         if (isset($users[$match['user']])) {
