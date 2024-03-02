@@ -196,7 +196,7 @@ function username(\StdClass $user)
         "name" => $user->name,
         "summary" => $user->summary,
         "url" => $user->id,
-        "manuallyApprovesFollowers" => true,
+        "manuallyApprovesFollowers" => false,
         "discoverable" => true,
         "published" => "2024-02-12",
         "indexable" => true,
