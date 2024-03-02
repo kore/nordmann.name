@@ -27,6 +27,9 @@ foreach ($users as $user) {
     $user->type = $user->isBot ?? false ? 'Service' : 'Person';
 
     $user->dataDirectory = __DIR__ . '/../data/' . $user->user;
+    if (!file_exists($user->dataDirectory)) {
+        mkdir($user->dataDirectory, 0750, true);
+    }
     $user->followers = file_exists($user->dataDirectory . '/followers.json') ? json_decode(file_get_contents($user->dataDirectory . '/followers.json')) : [];
     $user->outbox = file_exists($user->dataDirectory . '/outbox.json') ? json_decode(file_get_contents($user->dataDirectory . '/outbox.json')) : [];
 }
@@ -287,9 +290,6 @@ function inbox()
 
     // Does this account have any followers?
     $followerFile = $user->dataDirectory . '/followers.json';
-    if (!file_exists(dirname($followerFile))) {
-        mkdir(dirname($followerFile), 0750, true);
-    }
 
     if (file_exists($followerFile)) {
         $followers = json_decode(file_get_contents($followerFile), true);
@@ -300,7 +300,9 @@ function inbox()
     $followers[$inboxHost]["users"][] = $inboxActor;
     $count = 0;
     foreach ($followers as $host => $data) {
-        $followers[$host]["users"] = array_unique($data["users"]);
+        if ($host === 'count') continue;
+
+        $followers[$host]["users"] = array_unique($data["users"] ?? []);
         $count += count($followers[$host]["users"]);
     }
     $followers["count"] = $count;
