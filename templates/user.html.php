@@ -17,10 +17,10 @@
             <div class="toot__meta">
                 <span class="toot__author"><?=e($user->name)?></span>
                 <span class="toot__user">@<?=e($user->user)?>@<?=e($server)?></span>
-                <span class="toot__date"><?=e((new \DateTime("@" . ($post->published / 1000)))->format("j. M 'y"))?></span>
+                <span class="toot__date"><?=e((new \DateTime($post->published))->format("j. M 'y"))?></span>
             </div>
             <div class="toot__content">
-                <?=$post->content->HTML?>
+                <?=$post->content?>
             </div>
             <?php if (!empty($post->attachment)): ?>
             <div class="toot__media">
