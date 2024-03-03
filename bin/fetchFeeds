@@ -221,3 +221,44 @@ function formatContent(string $title, string $description)
     ];
 }
 
+// Headers:
+// Every message that your server sends needs to be cryptographically signed with your Private Key.
+// This is a complicated process. Please read https://blog.joinmastodon.org/2018/07/how-to-make-friends-and-verify-requests/ for more information.
+function generateSignedHeaders($user, $message, $host, $path)
+{
+    global $server, $keyPrivate;
+
+    // Encode the message object to JSON
+    $messageJson = json_encode($message);
+
+    // Location of the Public Key
+    $keyId = $user->id . "#main-key";
+
+    // Generate signing variables
+    $hash = hash("sha256", $messageJson, true);
+    $digest = base64_encode($hash);
+    $date = date("D, d M Y H:i:s \G\M\T");
+
+    // Get the Private Key
+    $signer = openssl_get_privatekey($keyPrivate);
+
+    // Sign the path, host, date, and digest
+    $stringToSign = "(request-target): post $path\nhost: $host\ndate: $date\ndigest: SHA-256=$digest";
+
+    // The signing function returns the variable $signature
+    // https://www.php.net/manual/en/function.openssl-sign.php
+    openssl_sign($stringToSign, $signature, $signer, OPENSSL_ALGO_SHA256);
+
+    // Full signature header
+    $signatureB64 = base64_encode($signature);
+    $signatureHeader = 'keyId="' .  $keyId .  '",algorithm="rsa-sha256",headers="(request-target) host date digest",signature="' .  $signatureB64 .  '"';
+
+    return [
+        "Host: {$host}",
+        "Date: {$date}",
+        "Digest: SHA-256={$digest}",
+        "Signature: {$signatureHeader}",
+        "Content-Type: application/activity+json",
+        "Accept: application/activity+json",
+    ];
+}
