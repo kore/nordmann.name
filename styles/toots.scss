@@ -39,9 +39,22 @@
   .toot__meta {
     font-size: 1.4rem;
     text-align: left;
+    margin: 1rem 0;
+
+    display: flex;
 
     .toot__author {
       font-weight: bold;
+      padding-right: 1rem;
     }
+
+    .toot__date {
+      flex-grow: 1;
+      text-align: right;
+    }
+  }
+
+  .toot__content {
+    font-size: 2rem;
   }
 }

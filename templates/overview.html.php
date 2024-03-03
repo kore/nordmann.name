@@ -13,7 +13,7 @@
   <?php if (isset($user->alias)): ?>
       <h5>→&nbsp;@<?=e($user->alias->user)?>@<?=e($user->alias->domain)?></h5>
   <?php else: ?>
-      <h5><?=e($user->followers->count ?? 0);?> followers | <?=e($user->outbox->count ?? 0);?> posts</h5>
+      <h5><?=e($user->followers->count ?? 0);?> followers | <?=e(count($user->outbox));?> toot(s)</h5>
   <?php endif; ?>
       <p class="account__text"><?=e($user->summary)?></p>
     </a>
