@@ -57,6 +57,12 @@ foreach ($users as $user) {
     }
     $user->followers = file_exists($user->dataDirectory . '/followers.json') ? json_decode(file_get_contents($user->dataDirectory . '/followers.json')) : [];
     $user->outbox = array_map('json_decode', array_map('file_get_contents', glob($user->dataDirectory . '/posts/*.json')));
+    usort(
+        $user->outbox,
+        function ($a, $b) {
+            return (new \DateTime($a->published)) <=> (new \DateTime($b->published));
+        }
+    );
 }
 
 return $users;

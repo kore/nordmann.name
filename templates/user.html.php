@@ -8,7 +8,7 @@
   </div>
 </div>
 <ul class="toots">
-<?php foreach ($user->outbox as $post): ?>
+<?php foreach (array_reverse($user->outbox) as $post): ?>
     <li class="toot row">
         <div class="column">
             <img src="<?=e($user->avatar)?>" width="64" height="64" alt="<?=e($user->name)?>" />
