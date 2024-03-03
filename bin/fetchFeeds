@@ -6,7 +6,18 @@ $users = include(__DIR__ . '/../users.php');
 foreach ($users as $user) {
     if (empty($user->rssSource)) continue;
 
-    $lastPostDate = new \DateTimeImmutable('1 year ago'); // Read from outbox
+    if (!empty($argv[1])) {
+        $lastPostDate = new \DateTimeImmutable($argv[1]);
+    } elseif (count($user->outbox)) {
+        $lastPostDate = new \DateTimeImmutable(
+            '@' . (max(array_map(function($post) {
+                return $post->published;
+            }, $user->outbox)) / 1000)
+        );
+    } else {
+        $lastPostDate = new \DateTimeImmutable('1 year ago');
+    }
+
     $rssFeed = new \DOMDocument();
     $rssFeed->load($user->rssSource);
 
