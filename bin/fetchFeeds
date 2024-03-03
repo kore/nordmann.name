@@ -116,8 +116,6 @@ foreach ($users as $user) {
         $note->{'@context'} = "https://www.w3.org/ns/activitystreams";
         file_put_contents($user->dataDirectory . '/posts/' . $item->id . '.json', json_encode($note, JSON_PRETTY_PRINT));
 
-        continue;
-
         // Send note
         $curlMultiHandle = curl_multi_init();
         foreach ($user->followers as $host => $users) {
@@ -146,7 +144,7 @@ foreach ($users as $user) {
         // Close the multi-handle
         curl_multi_close($curlMultiHandle);
 
-        echo "Note posted – {$user->id}/posts/{$guid}.json", PHP_EOL;
+        echo " * Note posted – {$user->id}/posts/{$guid}.json", PHP_EOL;
     }
 }
 
