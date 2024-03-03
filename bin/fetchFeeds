@@ -1,0 +1,214 @@
+#!/usr/bin/env php
+<?php
+
+$server = 'nordmann.name'; // Should this come from the env somehow?
+$users = include(__DIR__ . '/../users.php');
+foreach ($users as $user) {
+    if (empty($user->rssSource)) continue;
+
+    $lastPostDate = new \DateTimeImmutable('1 year ago'); // Read from outbox
+    $rssFeed = new \DOMDocument();
+    $rssFeed->load($user->rssSource);
+
+    // Sloppy RSS to object conversion
+    $xPath = new DOMXPath($rssFeed);
+    $items = [];
+    foreach ($xPath->query('//item') as $item) {
+        $items[] = (object) [
+            'id' => md5(trim($xPath->evaluate('string(guid)', $item))),
+            'title' => trim($xPath->evaluate('string(title)', $item)),
+            'description' => trim($xPath->evaluate('string(description)', $item)),
+            'link' => trim($xPath->evaluate('string(link)', $item)),
+            'date' => new \DateTimeImmutable(trim($xPath->evaluate('string(pubDate)', $item))),
+            'creator' => trim($xPath->evaluate('string(dc:creator)', $item)),
+            'image' => trim($xPath->evaluate('string(media:content/@url)', $item)),
+        ];
+    }
+
+    // Sort ascending by date, to post newest post last
+    usort($items, function ($a, $b) {
+        return $a->date <=> $b->date;
+    });
+
+    // Pick only post after last post date
+    $items = array_values(array_filter(
+        $items,
+        function ($item) use ($lastPostDate) {
+            return $item->date > $lastPostDate;
+        }
+    ));
+
+    // Ammend image meta information, if available
+    foreach ($items as $item) {
+        if (empty($item->image)) continue;
+
+        $imageMeta = getimagesize($item->image);
+        $item->imageMeta = (object) [
+            'original' => (object) [
+                'width' => $imageMeta[0],
+                'height' => $imageMeta[1],
+                'size' => "{$imageMeta[0]}x{$imageMeta[1]}",
+                'aspect' => $imageMeta[0] / $imageMeta[1],
+            ],
+        ];
+
+        $thumbnailImage = str_replace('.jpg', '.thumb.jpg', $item->image);
+        if ($thumbnailMeta = @getimagesize($thumbnailImage)) {
+            $item->thumbnail = $thumbnailImage;
+            $item->imageMeta->small = (object) [
+                'width' => $thumbnailMeta[0],
+                'height' => $thumbnailMeta[1],
+                'size' => "{$thumbnailMeta[0]}x{$thumbnailMeta[1]}",
+                'aspect' => $thumbnailMeta[0] / $thumbnailMeta[1],
+            ];
+        }
+    }
+
+    // Post items
+    foreach ($items as $item) {
+        $content = formatContent($item->title, $item->description);
+
+        // Construct the Message
+        // The audience is public and it is sent to all followers
+        $message = (object) [
+            "@context" => "https://www.w3.org/ns/activitystreams",
+            "id" => $user->id  . "/posts/{$item->id}.json",
+            "type" => "Create",
+            "actor" => $user->id,
+            "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+            "cc" => [$user->id . "/followers"],
+            "object" => (object) [
+                "@context" => ["https://www.w3.org/ns/activitystreams"],
+                "id" => $user->id . "/posts/{$item->id}.json",
+                "type" => "Note",
+                "published" => $item->date->getTimestamp() * 1000,
+                "attributedTo" => $user->id,
+                "content" => $content,
+                "contentMap" => ["en" => $content],
+                "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+                "tag" => [],
+            ],
+        ];
+
+        if (!empty($item->image)) {
+            $message->object->attachment = (object) [
+                'id' => md5($item->image),
+                'type' => 'Image',
+                'url' => $item->image,
+                'preview_url' => $item->thumbnail ?? null,
+                'meta' => $item->imageMeta,
+                'description' => $item->title . "\n\n" . $item->description,
+            ];
+        }
+
+        $note = clone $message->object;
+        $note->{'@context'} = "https://www.w3.org/ns/activitystreams";
+        file_put_contents($user->dataDirectory . '/posts/' . $item->id . '.json', json_encode($note, JSON_PRETTY_PRINT));
+
+        continue;
+
+        // Send note
+        $curlMultiHandle = curl_multi_init();
+        foreach ($user->followers as $host => $users) {
+            $path = "/inbox";
+            $headers = generateSignedHeaders($message, $host, $path);
+            $remoteServerUrl = "https://{$host}{$path}";
+
+            // POST the message and header to the requester's inbox
+            $curlHandle = curl_init($remoteServerUrl);
+            curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curlHandle, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($curlHandle, CURLOPT_POSTFIELDS, json_encode($message));
+            curl_setopt($curlHandle, CURLOPT_HTTPHEADER, $headers);
+
+            curl_multi_add_handle($curlMultiHandle, $curlHandle);
+        }
+
+        // Execute the multi-handle
+        do {
+            $status = curl_multi_exec($curlMultiHandle, $active);
+            if ($active) {
+                curl_multi_select($curlMultiHandle);
+            }
+        } while ($active && $status == CURLM_OK);
+
+        // Close the multi-handle
+        curl_multi_close($curlMultiHandle);
+
+        echo "Note posted – {$user->id}/posts/{$guid}.json", PHP_EOL;
+    }
+}
+
+// Content can be plain text. But to add clickable links and hashtags, it needs to be turned into HTML.
+// Tags are also included separately in the note
+function formatContent(string $title, string $description)
+{
+    global $server;
+
+    // Convert URLs into clickable links
+    $content = preg_replace_callback(
+        "(\bhttps?://\S+)iu",
+        function ($match) {
+            $url = htmlspecialchars($match[0], ENT_QUOTES, "UTF-8");
+            return "<a href=\"$url\">$url</a>";
+        },
+        $description
+    );
+
+    // Get any hashtags
+    $hashtags = [];
+    $hashtagPattern = "((?:^|\s)\#(\w+))"; // Beginning of string, or whitespace, followed by #
+    preg_match_all($hashtagPattern, $content, $hashtagMatches);
+    foreach ($hashtagMatches[1] as $match) {
+        $hashtags[] = $match;
+    }
+
+    // Construct the tag value for the note object
+    $tags = [];
+    foreach ($hashtags as $hashtag) {
+        $tags[] = [
+            "type" => "Hashtag",
+            "name" => "#{$hashtag}",
+        ];
+    }
+
+    // Add HTML links for hashtags into the text
+    $content = preg_replace(
+        $hashtagPattern,
+        " <a href='https://{$server}/tag/$1'>#$1</a>",
+        $content
+    );
+
+    // Detect user mentions
+    $usernames = [];
+    $usernamesPattern = "(@(\S+)@(\S+))"; // This is a *very* sloppy regex
+    preg_match_all($usernamesPattern, $content, $usernamesMatches);
+    foreach ($usernamesMatches[0] as $match) {
+        $usernames[] = $match;
+    }
+
+    // Construct the mentions value for the note object
+    // This goes in the generic "tag" property
+    // TODO: Add this to the CC field
+    foreach ($usernames as $username) {
+        list($null, $user, $domain) = explode("@", $username);
+        $tags[] = [
+            "type" => "Mention",
+            "href" => "https://{$domain}/@{$user}",
+            "name" => "{$username}",
+        ];
+
+        // Add HTML links to usernames
+        $usernameLink = "<a href=\"https://{$domain}/@{$user}\">$username</a>";
+        $content = str_replace($username, $usernameLink, $content);
+    }
+
+    // Construct the content
+    $content = "<strong>" . $title . "</strong><br /><br /><p>" . nl2br($content) . "</p>";
+
+    return [
+        "HTML" => $content,
+        "TagArray" => $tags,
+    ];
+}
+
