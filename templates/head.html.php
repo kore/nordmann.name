@@ -14,7 +14,9 @@
 <body>
   <header>
     <div class="container">
-      <img src="/images/header.svg" width="100%" alt="nortmann.name" />
+      <a href="/">
+        <img src="/images/header.svg" width="100%" alt="nortmann.name" />
+      </a>
     </div>
   </header>
   <main>

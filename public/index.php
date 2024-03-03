@@ -118,14 +118,17 @@ function webfinger()
 
     $user = $users[$match['user']];
 
+    if (!empty($user->alias)) {
+        // It's easier to just redirect requests for alias'd accounts then
+        // generating the correct response ourselves…
+        header("Location: https://{$user->alias->domain}/.well-known/webfinger?resource=acct:{$user->alias->user}@{$user->alias->domain}");
+        die();
+    }
+
     $webfinger = array_filter([
-        "aliases" => isset($user->alias) ? [
-            "https://{$user->alias->domain}/@{$user->alias->user}",
-            "https://{$user->alias->domain}/users/{$user->alias->user}",
-        ] : null,
         "links" => [
             [
-                "href" => "https://{$server}/@{$user->alias->user}",
+                "href" => "https://{$server}/@{$user->name}",
                 "rel" => "http://webfinger.net/rel/profile-page",
                 "type" => "text/html",
             ],
@@ -137,6 +140,7 @@ function webfinger()
         ],
         "subject" => "acct:{$user->user}@{$server}",
     ]);
+
     header("Content-Type: application/json");
     echo json_encode($webfinger);
     die();
