@@ -3,6 +3,9 @@
 
 $server = 'nordmann.name'; // Should this come from the env somehow?
 $users = include(__DIR__ . '/../users.php');
+$keyPrivate = file_get_contents(__DIR__ . "/../id_rsa");
+$keyPublic = file_get_contents(__DIR__ . "/../id_rsa.pub");
+
 foreach ($users as $user) {
     if (empty($user->rssSource)) continue;
 
@@ -120,7 +123,7 @@ foreach ($users as $user) {
         $curlMultiHandle = curl_multi_init();
         foreach ($user->followers as $host => $users) {
             $path = "/inbox";
-            $headers = generateSignedHeaders($message, $host, $path);
+            $headers = generateSignedHeaders($user, $message, $host, $path);
             $remoteServerUrl = "https://{$host}{$path}";
 
             // POST the message and header to the requester's inbox
@@ -144,7 +147,7 @@ foreach ($users as $user) {
         // Close the multi-handle
         curl_multi_close($curlMultiHandle);
 
-        echo " * Note posted – {$user->id}/posts/{$guid}.json", PHP_EOL;
+        echo " * Note posted – {$user->id}/posts/{$item->id}.json", PHP_EOL;
     }
 }
 
