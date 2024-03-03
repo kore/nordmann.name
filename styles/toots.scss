@@ -1,0 +1,47 @@
+.toots {
+  display: grid;
+  gap: 0rem;
+  list-style-type: none;
+  margin: 4rem;
+}
+
+.toot {
+  padding: 2rem;
+  margin: 0;
+
+  border: 1px solid $color-primary;
+  border-bottom: none;
+
+  &:first-child {
+    border-top-left-radius: 2rem;
+    border-top-right-radius: 2rem;
+  }
+
+  &:last-child {
+    border-bottom-left-radius: 2rem;
+    border-bottom-right-radius: 2rem;
+    border-bottom: 1px solid $color-primary;
+  }
+
+  .column:first-child {
+    flex-basis: calc(64px + 3rem);
+
+    > img {
+      width: 64px;
+      height: 64px;
+      margin: auto;
+      border-radius: 50%;
+      aspect-ratio: 1;
+      box-shadow: $color-primary-darker 0px 4px 7px -2px;
+    }
+  }
+
+  .toot__meta {
+    font-size: 1.4rem;
+    text-align: left;
+
+    .toot__author {
+      font-weight: bold;
+    }
+  }
+}
