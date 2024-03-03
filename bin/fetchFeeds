@@ -80,7 +80,7 @@ foreach ($users as $user) {
 
     // Post items
     foreach ($items as $item) {
-        $content = formatContent($item->title, $item->description);
+        $formattedContent = formatContent($item->title, $item->description);
 
         // Construct the Message
         // The audience is public and it is sent to all followers
@@ -95,12 +95,12 @@ foreach ($users as $user) {
                 "@context" => ["https://www.w3.org/ns/activitystreams"],
                 "id" => $user->id . "/posts/{$item->id}.json",
                 "type" => "Note",
-                "published" => $item->date->getTimestamp() * 1000,
+                "published" => $item->date->format('c'),
                 "attributedTo" => $user->id,
-                "content" => $content,
-                "contentMap" => ["en" => $content],
+                "content" => $formattedContent->html,
+                "contentMap" => ["en" => $formattedContent->html],
                 "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-                "tag" => [],
+                "tag" => $formattedContent->tags,
             ],
         ];
 
@@ -121,7 +121,10 @@ foreach ($users as $user) {
 
         // Send note
         $curlMultiHandle = curl_multi_init();
-        foreach ($user->followers as $host => $users) {
+        $curlHandles = [];
+        foreach ($user->followers as $host => $data) {
+            if (empty($data->users)) continue;
+
             $path = "/inbox";
             $headers = generateSignedHeaders($user, $message, $host, $path);
             $remoteServerUrl = "https://{$host}{$path}";
@@ -129,11 +132,14 @@ foreach ($users as $user) {
             // POST the message and header to the requester's inbox
             $curlHandle = curl_init($remoteServerUrl);
             curl_setopt($curlHandle, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curlHandle, CURLOPT_HEADER, true);
+
             curl_setopt($curlHandle, CURLOPT_CUSTOMREQUEST, "POST");
             curl_setopt($curlHandle, CURLOPT_POSTFIELDS, json_encode($message));
             curl_setopt($curlHandle, CURLOPT_HTTPHEADER, $headers);
 
             curl_multi_add_handle($curlMultiHandle, $curlHandle);
+            $curlHandles[] = $curlHandle;
         }
 
         // Execute the multi-handle
@@ -143,6 +149,12 @@ foreach ($users as $user) {
                 curl_multi_select($curlMultiHandle);
             }
         } while ($active && $status == CURLM_OK);
+
+        foreach ($curlHandles as $curlHandle) {
+            // Use for debugging
+            // echo curl_multi_getcontent($curlHandle);
+            curl_multi_remove_handle($curlMultiHandle, $curlHandle);
+        }
 
         // Close the multi-handle
         curl_multi_close($curlMultiHandle);
@@ -218,9 +230,9 @@ function formatContent(string $title, string $description)
     // Construct the content
     $content = "<strong>" . $title . "</strong><br /><br /><p>" . nl2br($content) . "</p>";
 
-    return [
-        "HTML" => $content,
-        "TagArray" => $tags,
+    return (object) [
+        "html" => $content,
+        "tags" => $tags,
     ];
 }
 
