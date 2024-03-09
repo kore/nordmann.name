@@ -230,7 +230,7 @@ function formatContent(\StdClass $item)
     // Construct the content
     $content = "<p><strong><a href=\"" . $item->link . "\">" . $item->title . "</a></strong></p>" .
         (strlen($content) ? "<p>" . nl2br($content) . "</p>" : "") .
-        "<p><a href=\"" . $item->link . "\">Visit source site: " . $item->title . "</a></p>";
+        "<p><a href=\"" . $item->link . "\">Source: " . $item->title . "</a></p>";
 
     return (object) [
         "html" => $content,
