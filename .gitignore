@@ -3,3 +3,5 @@ styles.css
 styles.css.map
 logs/
 data/
+id_rsa
+id_rsa.pub

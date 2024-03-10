@@ -47,5 +47,5 @@ as well: `bin/fetchFeeds '2 years ago'`.
 As you can see in the `Makefile` I just deploy the code to my server using a
 simple rsync command, evben while this obviously isn't atomic:
 
-    rsync --delete -a ./ --exclude data --exclude logs --exclude .git <host>:<path>/
+    rsync --delete -a ./ --exclude data --exclude logs --exclude .git --exclude id_rsa --exclude id_rsa.pub <host>:<path>/
 
