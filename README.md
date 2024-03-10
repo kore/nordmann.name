@@ -15,6 +15,8 @@ only be used with low traffic volumes.
 
 ## Development
 
+Run `npm install` to install the SCSS building tool chain.
+
 Run `make develop` or `bash bin/develop.sh` to start developing. This uses PHPs
 internal web server and also runs the SCSS compilation in the background. The
 frontend doesn't reload on CSS changes, though, so you'll have to manually
