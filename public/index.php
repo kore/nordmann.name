@@ -10,6 +10,13 @@
 
 $server = $_SERVER["SERVER_NAME"];
 $users = include(__DIR__ . '/../users.php');
+
+if (!file_exists(__DIR__ . "/../id_rsa") || !file_exists(__DIR__ . "/../id_rsa.pub")) {
+    header("HTTP/1.0 500 Internal Server Error");
+    echo "<h1>Missing files</h1><p>The key files id_rsa and/or id_rsa.pub are missing in the directory " . dirname(__DIR__) . ", but are required. You can generate them at <a href=\"https://cryptotools.net/rsagen\">https://cryptotools.net/rsagen</a>.</p>";
+    die();
+}
+
 $keyPrivate = file_get_contents(__DIR__ . "/../id_rsa");
 $keyPublic = file_get_contents(__DIR__ . "/../id_rsa.pub");
 
