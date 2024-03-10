@@ -91,9 +91,6 @@ switch (true) {
         if (isset($users[$match['user']])) {
             outbox($users[$match['user']]);
         } // Fallback to default -> 404
-    case "/viewSource" === $requestPath:
-        echo '<html><body><pre>' . e(file_get_contents(__FILE__)) . '</pre></body></html>';
-        die();
     case preg_match('(/users/(?P<user>[a-z0-9][a-z0-9-._]*))', $requestPath, $match):
     case preg_match('(/@(?P<user>[a-z0-9][a-z0-9-._]*))', $requestPath, $match):
         if (isset($users[$match['user']])) {
