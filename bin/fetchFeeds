@@ -9,23 +9,28 @@ if (!file_exists(__DIR__ . "/../id_rsa") || !file_exists(__DIR__ . "/../id_rsa.p
     exit(1);
 }
 
+$dryRun = in_array('-d', $argv) || in_array('--dry-run', $argv);
+$sinceDate = ($argc > 1 && !str_starts_with(end($argv), '-')) ? end($argv) : null;
+
 $keyPrivate = file_get_contents(__DIR__ . "/../id_rsa");
 $keyPublic = file_get_contents(__DIR__ . "/../id_rsa.pub");
 
 foreach ($users as $user) {
     if (empty($user->rssSource)) continue;
 
-    if (!empty($argv[1])) {
-        $lastPostDate = new \DateTimeImmutable($argv[1]);
+    if (!empty($sinceDate)) {
+        $lastPostDate = new \DateTimeImmutable($sinceDate);
     } elseif (count($user->outbox)) {
         $lastPostDate = new \DateTimeImmutable(
             '@' . (max(array_map(function($post) {
-                return $post->published;
-            }, $user->outbox)) / 1000)
+                return (new \DateTimeImmutable($post->published))->getTimestamp();
+            }, $user->outbox)))
         );
     } else {
-        $lastPostDate = new \DateTimeImmutable('1 year ago');
+        $lastPostDate = new \DateTimeImmutable('1 day ago');
     }
+
+    echo "Publish new posts since ", $lastPostDate->format('r'), PHP_EOL;
 
     $rssFeed = new \DOMDocument();
     $rssFeed->load($user->rssSource);
@@ -124,6 +129,11 @@ foreach ($users as $user) {
         $note = clone $message->object;
         $note->{'@context'} = "https://www.w3.org/ns/activitystreams";
         file_put_contents($user->dataDirectory . '/posts/' . $item->id . '.json', json_encode($note, JSON_PRETTY_PRINT));
+
+        if ($dryRun) {
+            echo " * Would've posted {$user->id}/posts/{$item->id}.json: ", var_export($note, true), PHP_EOL;
+            continue;
+        }
 
         // Send note
         $curlMultiHandle = curl_multi_init();
