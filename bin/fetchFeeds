@@ -185,6 +185,9 @@ function formatContent(\StdClass $item)
 {
     global $server;
 
+    // Remove single new lines in content
+    $item->description = preg_replace('/(?<!\n)\n(?!\n)/', ' ', $item->description);
+
     // Convert URLs into clickable links
     $content = preg_replace_callback(
         "(\bhttps?://\S+)iu",
