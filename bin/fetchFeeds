@@ -122,6 +122,7 @@ foreach ($users as $user) {
                 'url' => $item->image,
                 'preview_url' => $item->thumbnail ?? null,
                 'meta' => $item->imageMeta,
+                'name' => $item->title . "\n\n" . $item->description,
                 'description' => $item->title . "\n\n" . $item->description,
             ];
         }
