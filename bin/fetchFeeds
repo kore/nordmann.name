@@ -128,12 +128,13 @@ foreach ($users as $user) {
 
         $note = clone $message->object;
         $note->{'@context'} = "https://www.w3.org/ns/activitystreams";
-        file_put_contents($user->dataDirectory . '/posts/' . $item->id . '.json', json_encode($note, JSON_PRETTY_PRINT));
 
         if ($dryRun) {
             echo " * Would've posted {$user->id}/posts/{$item->id}.json: ", var_export($note, true), PHP_EOL;
             continue;
         }
+
+        file_put_contents($user->dataDirectory . '/posts/' . $item->id . '.json', json_encode($note, JSON_PRETTY_PRINT));
 
         // Send note
         $curlMultiHandle = curl_multi_init();
